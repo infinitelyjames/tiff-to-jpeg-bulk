@@ -3,7 +3,7 @@ from PIL import Image
 import logging
 from logging.handlers import QueueHandler, QueueListener
 import queue
-import threading
+import multiprocessing
 import sys
 
 # Set up logging
@@ -40,12 +40,19 @@ def convertFolder(folder):
     """
     Recursively converts all .tiff images in the given folder to .jpeg format.
     """
-    for root, _, files in os.walk(folder):
-        for file in files:
-            if file.lower().endswith('.tiff') or file.lower().endswith('.tif'):
-                input_path = os.path.join(root, file)
-                output_path = os.path.join(root, f"{os.path.splitext(file)[0]}-converted.jpeg")
-                convertImage(input_path, output_path)
+    results = []
+    log(f"Starting conversion in folder: {folder}")
+    with multiprocessing.Pool() as pool:
+        for root, _, files in os.walk(folder):
+            for file in files:
+                if file.lower().endswith('.tiff') or file.lower().endswith('.tif'):
+                    input_path = os.path.join(root, file)
+                    output_path = os.path.join(root, f"{os.path.splitext(file)[0]}-converted.jpeg")
+                    results.append(pool.apply_async(convertImage, (input_path, output_path)))
+        log(f"Conversion tasks submitted for folder: {folder} with {len(results)} tasks.")
+        for result in results:
+            result.get()
 
 if __name__ == "__main__":
     folder = sys.argv[1] if len(sys.argv) > 1 else '.'
+    convertFolder(folder)
