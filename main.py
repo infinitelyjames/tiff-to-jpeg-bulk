@@ -4,6 +4,7 @@ import logging
 from logging.handlers import QueueHandler, QueueListener
 import queue
 import threading
+import sys
 
 # Set up logging
 log_queue = queue.Queue()
@@ -34,3 +35,17 @@ def convertImage(input_path, output_path):
         log(f"Converted {input_path} to {output_path} successfully.")
     except Exception as e:
         log(f"Failed to convert {input_path} to {output_path}: {e}", level=logging.ERROR)
+
+def convertFolder(folder):
+    """
+    Recursively converts all .tiff images in the given folder to .jpeg format.
+    """
+    for root, _, files in os.walk(folder):
+        for file in files:
+            if file.lower().endswith('.tiff') or file.lower().endswith('.tif'):
+                input_path = os.path.join(root, file)
+                output_path = os.path.join(root, f"{os.path.splitext(file)[0]}-converted.jpeg")
+                convertImage(input_path, output_path)
+
+if __name__ == "__main__":
+    folder = sys.argv[1] if len(sys.argv) > 1 else '.'
